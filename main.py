@@ -6,7 +6,7 @@ import os
 from src.utils import set_seed
 from src.dataset import get_dataloaders
 from src.models import get_model
-from src.train import train_model
+from src.train import train_model, evaluate_model
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CINIC-10 Image Classification Grid Search")
@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["sgd", "adamw"], help="Optimizer choice")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
+    parser.add_argument("--skip_test", action="store_true", help="Skip final evaluation on test set")
     
     # Regularization hyperparameters
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate in classifier head")
@@ -77,6 +78,19 @@ def main():
     save_path = f"results/checkpoints/{args.model}_{args.optimizer}_bs{args.batch_size}_do{args.dropout}.pth"
     torch.save(trained_model.state_dict(), save_path)
     print(f"\nTraining complete. Model weights saved to: {save_path}")
+
+    # 8. Final Evaluation on Test Set
+    if not args.skip_test:
+        print("\n--- Final Evaluation ---")
+        test_acc = evaluate_model(trained_model, test_loader, device)
+        results_file = save_path.replace(".pth", "_results.txt")
+        with open(results_file, "w") as f:
+            f.write(f"Model: {args.model}\n")
+            f.write(f"Optimizer: {args.optimizer}\n")
+            f.write(f"Test Accuracy: {test_acc:.2f}%\n")
+
+        print(f"Final Test Accuracy: {test_acc:.2f}%")
+        print(f"Results logged to: {results_file}")
 
 if __name__ == "__main__":
     main()
