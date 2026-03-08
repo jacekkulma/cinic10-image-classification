@@ -14,6 +14,7 @@ def parse_args():
     # Environment arguments
     parser.add_argument("--data_dir", type=str, default="./data", help="Path to the CINIC-10 dataset")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
+    parser.add_argument("--num_workers", type=int, default=None, help="Number of data loading workers")
     
     # Model arguments
     parser.add_argument("--model", type=str, required=True, choices=["vgg16", "resnet18", "efficientnet_b0"], help="Architecture to train")
@@ -47,7 +48,11 @@ def main():
     
     # 4. Load Data
     print("\nLoading data...")
-    train_loader, valid_loader, test_loader = get_dataloaders(args.data_dir, args.batch_size)
+    train_loader, valid_loader, test_loader = get_dataloaders(
+        args.data_dir, 
+        args.batch_size, 
+        num_workers=args.num_workers
+    )
     
     # 5. Initialize Model
     print("Initializing model...")

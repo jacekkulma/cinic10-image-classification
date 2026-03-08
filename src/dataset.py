@@ -7,11 +7,14 @@ from torch.utils.data import DataLoader
 CINIC_MEAN = [0.47889522, 0.47227842, 0.43047404]
 CINIC_STD = [0.24205776, 0.23828046, 0.25874835]
 
-def get_dataloaders(data_dir: str, batch_size: int, num_workers: int = 0):
+def get_dataloaders(data_dir: str, batch_size: int, num_workers: int = None):
     """
     Creates train, validation, and test dataloaders for the CINIC-10 dataset.
     Optimized by default for 8-core/16-thread CPUs.
     """
+    # 0. Handle the default logic
+    if num_workers is None:
+        num_workers = 4
     
     # 1. Define Transforms
     base_transforms = transforms.Compose([
