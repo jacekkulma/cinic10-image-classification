@@ -1,0 +1,77 @@
+import argparse
+import torch
+import os
+
+# Import our custom modules
+from src.utils import set_seed
+from src.dataset import get_dataloaders
+from src.models import get_model
+from src.train import train_model
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="CINIC-10 Image Classification Grid Search")
+    
+    # Environment arguments
+    parser.add_argument("--data_dir", type=str, default="./data", help="Path to the CINIC-10 dataset")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
+    
+    # Model arguments
+    parser.add_argument("--model", type=str, required=True, choices=["vgg16", "resnet18", "efficientnet_b0"], help="Architecture to train")
+    
+    # Training process hyperparameters
+    parser.add_argument("--batch_size", type=int, default=64, choices=[32, 64, 128], help="Batch size for training")
+    parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
+    parser.add_argument("--optimizer", type=str, default="sgd", choices=["sgd", "adamw"], help="Optimizer choice")
+    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
+    
+    # Regularization hyperparameters
+    parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate in classifier head")
+    parser.add_argument("--weight_decay", type=float, default=1e-3, help="L2 regularization coefficient")
+    
+    return parser.parse_args()
+
+def main():
+    # 1. Parse CLI arguments
+    args = parse_args()
+    
+    # 2. Lock the random seed for reproducibility
+    set_seed(args.seed)
+    
+    # 3. Setup device (Sticking to CUDA or CPU as requested)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"--- Starting Experiment ---")
+    print(f"Device: {device}")
+    print(f"Model: {args.model.upper()}")
+    print(f"Batch Size: {args.batch_size} | Optimizer: {args.optimizer.upper()}")
+    print(f"Dropout: {args.dropout} | Weight Decay: {args.weight_decay}")
+    
+    # 4. Load Data
+    print("\nLoading data...")
+    train_loader, valid_loader, test_loader = get_dataloaders(args.data_dir, args.batch_size)
+    
+    # 5. Initialize Model
+    print("Initializing model...")
+    # Passing num_classes=10 for CINIC-10
+    model = get_model(args.model, num_classes=10, dropout_rate=args.dropout)
+    
+    # 6. Train Model
+    print("Beginning training loop...")
+    trained_model, history = train_model(
+        model=model,
+        train_loader=train_loader,
+        valid_loader=valid_loader,
+        epochs=args.epochs,
+        optimizer_name=args.optimizer,
+        lr=args.lr,
+        weight_decay=args.weight_decay,
+        device=device
+    )
+    
+    # 7. Save Checkpoint (Basic implementation)
+    os.makedirs("results/checkpoints", exist_ok=True)
+    save_path = f"results/checkpoints/{args.model}_{args.optimizer}_bs{args.batch_size}_do{args.dropout}.pth"
+    torch.save(trained_model.state_dict(), save_path)
+    print(f"\nTraining complete. Model weights saved to: {save_path}")
+
+if __name__ == "__main__":
+    main()
