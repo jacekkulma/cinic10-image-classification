@@ -29,7 +29,10 @@ def parse_args():
     # Regularization hyperparameters
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate in classifier head")
     parser.add_argument("--weight_decay", type=float, default=1e-3, help="L2 regularization coefficient")
-    
+
+    # Optional argument for data augmentation
+    parser.add_argument("--augmentation", action="store_true", help="Data augmentation to apply to the training set")
+
     return parser.parse_args()
 
 def main():
@@ -45,14 +48,16 @@ def main():
     print(f"Device: {device}")
     print(f"Model: {args.model.upper()}")
     print(f"Batch Size: {args.batch_size} | Optimizer: {args.optimizer.upper()}")
-    print(f"Dropout: {args.dropout} | Weight Decay: {args.weight_decay}")
-    
+    print(f"Dropout: {args.dropout} | Weight Decay: {args.weight_decay}")    
+    print(f"Data Augmentation: {'Enabled' if args.augmentation else 'Disabled'}")
+
     # 4. Load Data
     print("\nLoading data...")
     train_loader, valid_loader, test_loader = get_dataloaders(
         args.data_dir, 
         args.batch_size, 
-        num_workers=args.num_workers
+        num_workers=args.num_workers,
+        augmentation=args.augmentation
     )
     
     # 5. Initialize Model
@@ -74,8 +79,9 @@ def main():
     )
     
     # 7. Save Checkpoint (Basic implementation)
+    # 7. Save Checkpoint
     os.makedirs("results/checkpoints", exist_ok=True)
-    save_path = f"results/checkpoints/{args.model}_{args.optimizer}_bs{args.batch_size}_do{args.dropout}.pth"
+    save_path = f"results/checkpoints/{args.model}_{args.optimizer}_bs{args.batch_size}_do{args.dropout}_{args.augmentation}.pth"
     torch.save(trained_model.state_dict(), save_path)
     print(f"\nTraining complete. Model weights saved to: {save_path}")
 

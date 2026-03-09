@@ -4,10 +4,12 @@ import sys
 import os
 from datetime import datetime
 
-def run_experiment(model, opt, bs, epochs, workers, dropout, weight_decay):
-    """Executes a single training run via main.py"""
+def run_experiment(model, opt, augmentation, bs, epochs, workers, dropout, weight_decay):
+    """Executes a single training run via main.py with augmentation configuration"""
+    aug_status = "ON" if augmentation else "OFF"
     print(f"\n{'='*60}")
-    print(f"RUNNING: Model={model.upper()} | Opt={opt.upper()} | BS={bs}")
+    print(f"RUNNING: Model={model.upper()} | Opt={opt.upper()}")
+    print(f"Augmentation={aug_status}")
     print(f"{'='*60}")
 
     # Use sys.executable to ensure we use the current virtual env's python
@@ -18,10 +20,14 @@ def run_experiment(model, opt, bs, epochs, workers, dropout, weight_decay):
         "--batch_size", str(bs),
         "--epochs", str(epochs),
         "--num_workers", str(workers),
-        "--seed", "42", # Fixed seed for reproducibility
+        "--seed", "42",  # Fixed seed for reproducibility
         "--dropout", str(dropout),
         "--weight_decay", str(weight_decay),
     ]
+
+    # Add augmentation flag if enabled
+    if augmentation:
+        cmd.append("--augmentation")
 
     try:
         # check=True will raise an error if main.py crashes
@@ -31,32 +37,33 @@ def run_experiment(model, opt, bs, epochs, workers, dropout, weight_decay):
 
 def main():
     # 1. Define your Grid
-    models = ["vgg16", "resnet18", "efficientnet_b0"]
-    optimizers = ["adamw", "sgd"]
-    batch_sizes = [32, 64, 128]
-    dropout_rates = [0.1, 0.2, 0.5]
-    weight_decays = [1e-4, 1e-3, 1e-2]
+    models = ["vgg16", "resnet18", "efficientnet_b0"]    
+    augmentation_enabled = [True, False]
 
     # Static settings
+    batch_size = 32
+    optimizer = "adamw"
     epochs = 1
-    num_workers = 0 # Set according to your device setup
+    num_workers = 0  # Set according to your device setup
+    dropout_rate = 0.1
+    weight_decay = 1e-3
     
     # 2. Generate all combinations using Cartesian Product
-    experiments = list(itertools.product(models, optimizers, batch_sizes, dropout_rates, weight_decays))
+    experiments = list(itertools.product(models, augmentation_enabled))
     
     total = len(experiments)
-    print(f"Starting Grid Search: {total} experiments queued.")
+    print(f"Starting Data Augmentation Experiment: {total} experiments queued.")
     start_time = datetime.now()
 
     # 3. Loop through and run
-    for i, (model, opt, bs, dropout, weight_decay) in enumerate(experiments, 1):
+    for i, (model, aug_enabled) in enumerate(experiments, 1):
         print(f"\nProgress: {i}/{total}")
-        run_experiment(model, opt, bs, epochs, num_workers, dropout, weight_decay)
+        run_experiment(model, optimizer, aug_enabled, batch_size, epochs, num_workers, dropout_rate, weight_decay)
 
     end_time = datetime.now()
     duration = end_time - start_time
     print(f"\n{'='*60}")
-    print(f"GRID SEARCH COMPLETE in {duration}")
+    print(f"DATA AUGMENTATION EXPERIMENTS COMPLETE in {duration}")
     print(f"{'='*60}")
 
 if __name__ == "__main__":
