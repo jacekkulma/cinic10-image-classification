@@ -4,12 +4,11 @@ import sys
 import os
 from datetime import datetime
 
-def run_experiment(model, opt, augmentation, bs, epochs, workers, dropout, weight_decay):
+def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, weight_decay):
     """Executes a single training run via main.py with augmentation configuration"""
-    aug_status = "ON" if augmentation else "OFF"
     print(f"\n{'='*60}")
     print(f"RUNNING: Model={model.upper()} | Opt={opt.upper()}")
-    print(f"Augmentation={aug_status}")
+    print(f"Augmentation Type={augmentation_type.upper()}")
     print(f"{'='*60}")
 
     # Use sys.executable to ensure we use the current virtual env's python
@@ -23,22 +22,19 @@ def run_experiment(model, opt, augmentation, bs, epochs, workers, dropout, weigh
         "--seed", "42",  # Fixed seed for reproducibility
         "--dropout", str(dropout),
         "--weight_decay", str(weight_decay),
+        "--augmentation_type", augmentation_type,
     ]
-
-    # Add augmentation flag if enabled
-    if augmentation:
-        cmd.append("--augmentation")
 
     try:
         # check=True will raise an error if main.py crashes
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"\n[!] Experiment Failed: {model} with {opt}. Error: {e}")
+        print(f"\n[!] Experiment Failed: {model} with {opt} and augmentation_type={augmentation_type}. Error: {e}")
 
 def main():
     # 1. Define your Grid
     models = ["vgg16", "resnet18", "efficientnet_b0"]    
-    augmentation_enabled = [True, False]
+    augmentation_types = ["none", "simple", "advanced", "both"]
 
     # Static settings
     batch_size = 32
@@ -49,16 +45,16 @@ def main():
     weight_decay = 1e-3
     
     # 2. Generate all combinations using Cartesian Product
-    experiments = list(itertools.product(models, augmentation_enabled))
+    experiments = list(itertools.product(models, augmentation_types))
     
     total = len(experiments)
     print(f"Starting Data Augmentation Experiment: {total} experiments queued.")
     start_time = datetime.now()
 
     # 3. Loop through and run
-    for i, (model, aug_enabled) in enumerate(experiments, 1):
+    for i, (model, aug_type) in enumerate(experiments, 1):
         print(f"\nProgress: {i}/{total}")
-        run_experiment(model, optimizer, aug_enabled, batch_size, epochs, num_workers, dropout_rate, weight_decay)
+        run_experiment(model, optimizer, aug_type, batch_size, epochs, num_workers, dropout_rate, weight_decay)
 
     end_time = datetime.now()
     duration = end_time - start_time
