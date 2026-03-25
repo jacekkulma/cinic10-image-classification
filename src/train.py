@@ -45,27 +45,59 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
         correct_train = 0
         total_train = 0
 
-        for images, labels in train_loader:
-            images, labels = images.to(device), labels.to(device)
+        for batch_data in train_loader:
+            # Check if this is a Mixup batch (4 elements) or regular batch (2 elements)
+            if len(batch_data) == 4:
+                # Mixup case: (images, labels_a, labels_b, alpha)
+                images, labels_a, labels_b, alpha = batch_data
+                images = images.to(device)
+                labels_a = labels_a.to(device)
+                labels_b = labels_b.to(device)
+                alpha = alpha.to(device)
+                
+                # Zero the gradients from the previous step
+                optimizer.zero_grad()
 
-            # Zero the gradients from the previous step
-            optimizer.zero_grad()
+                # Forward pass: predict the classes
+                outputs = model(images)
+                
+                # Mixup loss: weighted combination of two label losses
+                loss = alpha * criterion(outputs, labels_a) + (1 - alpha) * criterion(outputs, labels_b)
 
-            # Forward pass: predict the classes
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+                # Backward pass: calculate gradients
+                loss.backward()
 
-            # Backward pass: calculate gradients
-            loss.backward()
+                # Optimizer step: update weights
+                optimizer.step()
 
-            # Optimizer step: update weights
-            optimizer.step()
+                # Track metrics (use labels_a for accuracy with Mixup)
+                running_loss += loss.item() * images.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                total_train += labels_a.size(0)
+                correct_train += (predicted == labels_a).sum().item()
+            else:
+                # Regular case: (images, labels)
+                images, labels = batch_data
+                images, labels = images.to(device), labels.to(device)
 
-            # Track metrics
-            running_loss += loss.item() * images.size(0)
-            _, predicted = torch.max(outputs.data, 1)
-            total_train += labels.size(0)
-            correct_train += (predicted == labels).sum().item()
+                # Zero the gradients from the previous step
+                optimizer.zero_grad()
+
+                # Forward pass: predict the classes
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+
+                # Backward pass: calculate gradients
+                loss.backward()
+
+                # Optimizer step: update weights
+                optimizer.step()
+
+                # Track metrics
+                running_loss += loss.item() * images.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                total_train += labels.size(0)
+                correct_train += (predicted == labels).sum().item()
 
         epoch_train_loss = running_loss / total_train
         epoch_train_acc = correct_train / total_train
