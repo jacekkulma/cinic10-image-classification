@@ -82,6 +82,7 @@ class SimpleShot:
         self.device = device
         self.centroids = None
         self.classes = None
+        self.feature_mean = None
     
     def fit(self, support_images: torch.Tensor, support_labels: torch.Tensor):
         """
@@ -93,6 +94,13 @@ class SimpleShot:
         """
         # Extract features from support set
         support_features = self.feature_extractor.extract_features(support_images)
+        
+        # --- SimpleShot Transformations ---
+        # 1. Centering: Subtract the mean of the support set features
+        self.feature_mean = support_features.mean(dim=0, keepdim=True)
+        support_features = support_features - self.feature_mean
+        # 2. L2 Normalization: Normalize feature vectors to unit length
+        support_features = torch.nn.functional.normalize(support_features, p=2, dim=1)
         
         # Get unique classes
         self.classes = torch.unique(support_labels)
@@ -120,6 +128,12 @@ class SimpleShot:
         
         # Extract features from query set
         query_features = self.feature_extractor.extract_features(query_images)
+        
+        # --- SimpleShot Transformations ---
+        # 1. Centering: Subtract the previously computed support set mean
+        query_features = query_features - self.feature_mean
+        # 2. L2 Normalization: Normalize query feature vectors to unit length
+        query_features = torch.nn.functional.normalize(query_features, p=2, dim=1)
         
         # Compute distances to all centroids (using Euclidean distance)
         predictions = []
