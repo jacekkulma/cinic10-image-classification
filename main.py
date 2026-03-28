@@ -2,6 +2,7 @@ import argparse
 import torch
 import os
 import time
+import json
 
 # Import our custom modules
 from src.utils import set_seed
@@ -117,8 +118,14 @@ def main():
         f.write(f"Test Accuracy: {test_acc_str}\n")
         f.write(f"Total Time: {duration_mins:.2f} minutes\n")
 
+    # Save history for plotting
+    history_file = save_path.replace(".pth", "_history.json")
+    with open(history_file, 'w') as f:
+        json.dump(history, f, indent=2)
+
     print(f"Total Time: {duration_mins:.2f} minutes")
     print(f"Results logged to: {results_file}")
+    print(f"Training history saved to: {history_file}")
 
 if __name__ == "__main__":
     main()
