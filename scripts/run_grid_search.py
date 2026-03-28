@@ -51,13 +51,20 @@ def main():
     experiments_phase_a = list(itertools.product(models, optimizers, batch_sizes, [0.1], [1e-4]))
     
     # --- PHASE B: Find best regularization parameters (27 experiments) ---
-    # TODO: Update these two variables based on your Phase A results before running Phase B!
-    best_opt = "adamw"   
-    best_bs = 64         
-    experiments_phase_b = list(itertools.product(models, [best_opt], [best_bs], dropout_rates, weight_decays))
+    # Update this dictionary with the best Optimizer and Batch Size for EACH model found in Phase A
+    best_params = {
+        "vgg16": {"opt": "adamw", "bs": 64},
+        "resnet18": {"opt": "adamw", "bs": 32},
+        "efficientnet_b0": {"opt": "adamw", "bs": 32}
+    }
+    
+    experiments_phase_b = []
+    for m in models:
+        for do, wd in itertools.product(dropout_rates, weight_decays):
+            experiments_phase_b.append((m, best_params[m]["opt"], best_params[m]["bs"], do, wd))
     
     # CHOOSE WHICH PHASE TO RUN HERE:
-    experiments = experiments_phase_a
+    experiments = experiments_phase_b
     
     total = len(experiments)
     print(f"Starting Grid Search: {total} experiments queued.")
