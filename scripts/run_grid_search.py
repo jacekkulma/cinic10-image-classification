@@ -21,6 +21,7 @@ def run_experiment(model, opt, bs, epochs, workers, dropout, weight_decay, lr):
         "--seed", "42", # Fixed seed for reproducibility
         "--dropout", str(dropout),
         "--weight_decay", str(weight_decay),
+        "--skip_test", # Skip final evaluation during tuning
         "--lr", str(lr),
     ]
 

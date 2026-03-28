@@ -4,7 +4,7 @@ import sys
 import os
 from datetime import datetime
 
-def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, weight_decay):
+def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, weight_decay, lr):
     """Executes a single training run via main.py with augmentation configuration"""
     print(f"\n{'='*60}")
     print(f"RUNNING: Model={model.upper()} | Opt={opt.upper()}")
@@ -22,6 +22,7 @@ def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, 
         "--seed", "42",  # Fixed seed for reproducibility
         "--dropout", str(dropout),
         "--weight_decay", str(weight_decay),
+        "--lr", str(lr),
         "--augmentation_type", augmentation_type,
     ]
 
@@ -42,6 +43,7 @@ def main():
     epochs = 10  # Set to your final evaluation epoch count
     num_workers = 4  # Set according to your device setup
     dropout_rate = 0.1
+    learning_rate = 1e-4 # IMPORTANT: Use the winning LR from your grid search
     weight_decay = 1e-3
     
     # 2. Generate all combinations using Cartesian Product
@@ -54,7 +56,7 @@ def main():
     # 3. Loop through and run
     for i, (model, aug_type) in enumerate(experiments, 1):
         print(f"\nProgress: {i}/{total}")
-        run_experiment(model, optimizer, aug_type, batch_size, epochs, num_workers, dropout_rate, weight_decay)
+        run_experiment(model, optimizer, aug_type, batch_size, epochs, num_workers, dropout_rate, weight_decay, learning_rate)
 
     end_time = datetime.now()
     duration = end_time - start_time
