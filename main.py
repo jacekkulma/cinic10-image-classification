@@ -1,6 +1,7 @@
 import argparse
 import torch
 import os
+import time
 
 # Import our custom modules
 from src.utils import set_seed
@@ -36,6 +37,9 @@ def parse_args():
     return parser.parse_args()
 
 def main():
+    # 0. Start timer
+    start_time = time.time()
+
     # 1. Parse CLI arguments
     args = parse_args()
     
@@ -57,7 +61,8 @@ def main():
         args.data_dir, 
         args.batch_size, 
         num_workers=args.num_workers,
-        augmentation_type=args.augmentation_type
+        augmentation_type=args.augmentation_type,
+        seed=args.seed
     )
     
     # 5. Initialize Model
@@ -88,13 +93,29 @@ def main():
     if not args.skip_test:
         print("\n--- Final Evaluation ---")
         test_acc = evaluate_model(trained_model, test_loader, device)
+        
+        end_time = time.time()
+        duration_mins = (end_time - start_time) / 60.0
+        
         results_file = save_path.replace(".pth", "_results.txt")
         with open(results_file, "w") as f:
             f.write(f"Model: {args.model}\n")
             f.write(f"Optimizer: {args.optimizer}\n")
+            f.write(f"Learning Rate: {args.lr}\n")
+            f.write(f"Batch Size: {args.batch_size}\n")
+            f.write(f"Dropout: {args.dropout}\n")
+            f.write(f"Weight Decay: {args.weight_decay}\n")
+            f.write(f"Augmentation: {args.augmentation_type}\n")
+            f.write(f"Epochs: {args.epochs}\n")
+            f.write(f"--------------------\n")
+            f.write(f"Final Train Acc: {history['train_acc'][-1]*100:.2f}%\n")
+            f.write(f"Final Valid Acc: {history['valid_acc'][-1]*100:.2f}%\n")
+            f.write(f"--------------------\n")
             f.write(f"Test Accuracy: {test_acc:.2f}%\n")
+            f.write(f"Total Time: {duration_mins:.2f} minutes\n")
 
         print(f"Final Test Accuracy: {test_acc:.2f}%")
+        print(f"Total Time: {duration_mins:.2f} minutes")
         print(f"Results logged to: {results_file}")
 
 if __name__ == "__main__":

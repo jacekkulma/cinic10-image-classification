@@ -28,6 +28,10 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
     # Initialize the optimizer you want to test
     optimizer = get_optimizer(model, optimizer_name, lr, weight_decay)
 
+    # Setup Automatic Mixed Precision (AMP) scaler
+    use_amp = 'cuda' in str(device)
+    scaler = torch.amp.GradScaler('cuda', enabled=use_amp)
+
     # We will track these to see how the hyper-parameters affect convergence
     history = {
         'train_loss': [], 'train_acc': [],
@@ -58,17 +62,18 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
                 # Zero the gradients from the previous step
                 optimizer.zero_grad()
 
-                # Forward pass: predict the classes
-                outputs = model(images)
-                
-                # Mixup loss: weighted combination of two label losses
-                loss = alpha * criterion(outputs, labels_a) + (1 - alpha) * criterion(outputs, labels_b)
+                # Forward pass with AMP
+                with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
+                    outputs = model(images)
+                    # Mixup loss: weighted combination of two label losses
+                    loss = alpha * criterion(outputs, labels_a) + (1 - alpha) * criterion(outputs, labels_b)
 
-                # Backward pass: calculate gradients
-                loss.backward()
+                # Backward pass with Scaler
+                scaler.scale(loss).backward()
 
-                # Optimizer step: update weights
-                optimizer.step()
+                # Optimizer step with Scaler
+                scaler.step(optimizer)
+                scaler.update()
 
                 # Track metrics (use labels_a for accuracy with Mixup)
                 running_loss += loss.item() * images.size(0)
@@ -83,15 +88,17 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
                 # Zero the gradients from the previous step
                 optimizer.zero_grad()
 
-                # Forward pass: predict the classes
-                outputs = model(images)
-                loss = criterion(outputs, labels)
+                # Forward pass with AMP
+                with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
+                    outputs = model(images)
+                    loss = criterion(outputs, labels)
 
-                # Backward pass: calculate gradients
-                loss.backward()
+                # Backward pass with Scaler
+                scaler.scale(loss).backward()
 
-                # Optimizer step: update weights
-                optimizer.step()
+                # Optimizer step with Scaler
+                scaler.step(optimizer)
+                scaler.update()
 
                 # Track metrics
                 running_loss += loss.item() * images.size(0)
@@ -115,8 +122,10 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
             for images, labels in valid_loader:
                 images, labels = images.to(device), labels.to(device)
 
-                outputs = model(images)
-                loss = criterion(outputs, labels)
+                # Use AMP for validation inference as well to speed it up
+                with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
+                    outputs = model(images)
+                    loss = criterion(outputs, labels)
 
                 running_valid_loss += loss.item() * images.size(0)
                 _, predicted = torch.max(outputs.data, 1)

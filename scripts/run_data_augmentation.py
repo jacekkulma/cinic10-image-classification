@@ -39,8 +39,8 @@ def main():
     # Static settings
     batch_size = 32
     optimizer = "adamw"
-    epochs = 1
-    num_workers = 0  # Set according to your device setup
+    epochs = 10  # Set to your final evaluation epoch count
+    num_workers = 4  # Set according to your device setup
     dropout_rate = 0.1
     weight_decay = 1e-3
     
@@ -48,7 +48,7 @@ def main():
     experiments = list(itertools.product(models, augmentation_types))
     
     total = len(experiments)
-    print(f"Starting Data Augmentation Experiment: {total} experiments queued.")
+    print(f"Starting Final Evaluation (Baselines & Augmentations): {total} experiments queued.")
     start_time = datetime.now()
 
     # 3. Loop through and run
