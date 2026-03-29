@@ -1,4 +1,5 @@
 import os
+import random
 import torch
 import numpy as np
 import torchvision
@@ -9,6 +10,11 @@ from torch.utils.data import DataLoader
 # CINIC-10 specific statistics
 CINIC_MEAN = [0.47889522, 0.47227842, 0.43047404]
 CINIC_STD = [0.24205776, 0.23828046, 0.25874835]
+
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
 
 
 class MixupCollate:
@@ -49,7 +55,7 @@ class MixupCollate:
         return mixed_images, mixed_labels_a, mixed_labels_b, torch.tensor(self.alpha)
 
 
-def get_dataloaders(data_dir: str, batch_size: int, num_workers: int = None, augmentation_type: str = "none"):
+def get_dataloaders(data_dir: str, batch_size: int, num_workers: int = None, augmentation_type: str = "none", seed: int = 42):
     """
     Creates train, validation, and test dataloaders for the CINIC-10 dataset.
     Supports different augmentation strategies: 'none', 'simple', 'advanced' (Mixup), or 'both'.
@@ -108,15 +114,21 @@ def get_dataloaders(data_dir: str, batch_size: int, num_workers: int = None, aug
     if augmentation_type in ["advanced", "both"]:
         # Use Mixup collate function with lambda=0.8 for Mixup augmentation
         train_collate_fn = MixupCollate(alpha=0.8)
+        
+    # 4. Generator for deterministic data loading
+    g = torch.Generator()
+    g.manual_seed(seed)
 
-    # 4. Create DataLoaders
+    # 5. Create DataLoaders
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,  
         num_workers=num_workers,
         pin_memory=True,
-        collate_fn=train_collate_fn
+        collate_fn=train_collate_fn,
+        worker_init_fn=seed_worker,
+        generator=g
     )
     
     valid_loader = DataLoader(
@@ -124,7 +136,9 @@ def get_dataloaders(data_dir: str, batch_size: int, num_workers: int = None, aug
         batch_size=batch_size,
         shuffle=False, 
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=True,
+        worker_init_fn=seed_worker,
+        generator=g
     )
 
     test_loader = DataLoader(
@@ -132,7 +146,9 @@ def get_dataloaders(data_dir: str, batch_size: int, num_workers: int = None, aug
         batch_size=batch_size,
         shuffle=False, 
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=True,
+        worker_init_fn=seed_worker,
+        generator=g
     )
 
     return train_loader, valid_loader, test_loader

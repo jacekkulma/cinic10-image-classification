@@ -4,7 +4,7 @@ import sys
 import os
 from datetime import datetime
 
-def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, weight_decay):
+def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, weight_decay, lr):
     """Executes a single training run via main.py with augmentation configuration"""
     print(f"\n{'='*60}")
     print(f"RUNNING: Model={model.upper()} | Opt={opt.upper()}")
@@ -22,6 +22,7 @@ def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, 
         "--seed", "42",  # Fixed seed for reproducibility
         "--dropout", str(dropout),
         "--weight_decay", str(weight_decay),
+        "--lr", str(lr),
         "--augmentation_type", augmentation_type,
     ]
 
@@ -36,25 +37,30 @@ def main():
     models = ["vgg16", "resnet18", "efficientnet_b0"]    
     augmentation_types = ["none", "simple", "advanced", "both"]
 
-    # Static settings
-    batch_size = 32
-    optimizer = "adamw"
-    epochs = 1
-    num_workers = 0  # Set according to your device setup
-    dropout_rate = 0.1
-    weight_decay = 1e-3
+    # Update these with your final winning parameters from Phase B!
+    best_params = {
+        "vgg16": {"opt": "adamw", "bs": 64, "do": 0.2, "wd": 0.01},
+        "resnet18": {"opt": "adamw", "bs": 32, "do": 0.1, "wd": 0.01},
+        "efficientnet_b0": {"opt": "adamw", "bs": 32, "do": 0.2, "wd": 0.01}
+    }
+
+    # Static settings across all models
+    epochs = 10  # Set to your final evaluation epoch count
+    num_workers = 4  # Set according to your device setup
+    learning_rate = 1e-4 # IMPORTANT: Use the winning LR from your grid search
     
     # 2. Generate all combinations using Cartesian Product
     experiments = list(itertools.product(models, augmentation_types))
     
     total = len(experiments)
-    print(f"Starting Data Augmentation Experiment: {total} experiments queued.")
+    print(f"Starting Final Evaluation (Baselines & Augmentations): {total} experiments queued.")
     start_time = datetime.now()
 
     # 3. Loop through and run
     for i, (model, aug_type) in enumerate(experiments, 1):
         print(f"\nProgress: {i}/{total}")
-        run_experiment(model, optimizer, aug_type, batch_size, epochs, num_workers, dropout_rate, weight_decay)
+        params = best_params[model]
+        run_experiment(model, params["opt"], aug_type, params["bs"], epochs, num_workers, params["do"], params["wd"], learning_rate)
 
     end_time = datetime.now()
     duration = end_time - start_time

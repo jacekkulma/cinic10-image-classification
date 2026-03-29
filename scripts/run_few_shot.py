@@ -49,6 +49,10 @@ def parse_args():
                        help="Random seed for reproducibility")
     parser.add_argument("--output", type=str, default="./results/few_shot_results.json",
                        help="Path to save results")
+                       
+    # Optional arguments to load your fine-tuned checkpoints
+    parser.add_argument("--checkpoint", type=str, default=None, help="Path to a trained .pth model checkpoint")
+    parser.add_argument("--dropout", type=float, default=None, help="Dropout rate used during training (required for ResNet18 checkpoints)")
     
     return parser.parse_args()
 
@@ -65,7 +69,10 @@ def main():
     
     # Load model
     print(f"\nLoading pre-trained model: {args.model}")
-    model = get_model(args.model, num_classes=10)
+    model = get_model(args.model, num_classes=10, dropout_rate=args.dropout)
+    if args.checkpoint:
+        print(f"Loading fine-tuned weights from: {args.checkpoint}")
+        model.load_state_dict(torch.load(args.checkpoint, map_location=device))
     model.to(device)
     
     # Load dataset
