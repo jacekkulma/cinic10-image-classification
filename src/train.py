@@ -9,7 +9,7 @@ def get_optimizer(model, optimizer_name: str, lr: float, weight_decay: float):
     optimizer_name = optimizer_name.lower()
     
     if optimizer_name == "sgd":
-        # Using SGD with a standard momentum of 0.9 as per project plan
+        # SGD with momentum
         return optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
     elif optimizer_name == "adamw":
         return optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -22,17 +22,17 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
     """
     model = model.to(device)
     
-    # CrossEntropyLoss is the standard loss function for multi-class classification (10 classes)
+    # Loss function for multi-class classification
     criterion = nn.CrossEntropyLoss()
     
-    # Initialize the optimizer you want to test
+    # Initialize optimizer
     optimizer = get_optimizer(model, optimizer_name, lr, weight_decay)
 
     # Setup Automatic Mixed Precision (AMP) scaler
     use_amp = 'cuda' in str(device)
     scaler = torch.amp.GradScaler('cuda', enabled=use_amp)
 
-    # We will track these to see how the hyper-parameters affect convergence
+    # Track convergence metrics
     history = {
         'train_loss': [], 'train_acc': [],
         'valid_loss': [], 'valid_acc': []
@@ -44,15 +44,15 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
         # -------------------
         # 1. Training Phase
         # -------------------
-        model.train() # Set model to training mode (enables Dropout)
+        model.train()
         running_loss = 0.0
         correct_train = 0
         total_train = 0
 
         for batch_data in train_loader:
-            # Check if this is a Mixup batch (4 elements) or regular batch (2 elements)
+            # Handle Mixup (4 elements) or regular batch (2 elements)
             if len(batch_data) == 4:
-                # Mixup case: (images, labels_a, labels_b, alpha)
+                # Mixup case
                 images, labels_a, labels_b, alpha = batch_data
                 images = images.to(device)
                 labels_a = labels_a.to(device)
@@ -81,7 +81,7 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
                 total_train += labels_a.size(0)
                 correct_train += (predicted == labels_a).sum().item()
             else:
-                # Regular case: (images, labels)
+                # Regular case
                 images, labels = batch_data
                 images, labels = images.to(device), labels.to(device)
 
@@ -112,17 +112,17 @@ def train_model(model, train_loader, valid_loader, epochs: int, optimizer_name: 
         # -------------------
         # 2. Validation Phase
         # -------------------
-        model.eval() # Set model to evaluation mode (disables Dropout)
+        model.eval()
         running_valid_loss = 0.0
         correct_valid = 0
         total_valid = 0
 
-        # Disable gradient calculation for validation to save memory and compute
+        # Disable gradient calculation
         with torch.no_grad():
             for images, labels in valid_loader:
                 images, labels = images.to(device), labels.to(device)
 
-                # Use AMP for validation inference as well to speed it up
+                # Use AMP for validation inference
                 with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
                     outputs = model(images)
                     loss = criterion(outputs, labels)
@@ -155,7 +155,7 @@ def evaluate_model(model, test_loader, device):
     correct = 0
     total = 0
     
-    with torch.no_grad(): # Critical: disables gradient tracking to save memory
+    with torch.no_grad(): # Disable gradient tracking
         for images, labels in test_loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)

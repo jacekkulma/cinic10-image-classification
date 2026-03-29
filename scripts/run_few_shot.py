@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument("--output", type=str, default="./results/few_shot_results.json",
                        help="Path to save results")
                        
-    # Optional arguments to load your fine-tuned checkpoints
+    # Load fine-tuned checkpoints
     parser.add_argument("--checkpoint", type=str, default=None, help="Path to a trained .pth model checkpoint")
     parser.add_argument("--dropout", type=float, default=None, help="Dropout rate used during training (required for ResNet18 checkpoints)")
     

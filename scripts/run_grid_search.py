@@ -10,7 +10,7 @@ def run_experiment(model, opt, bs, epochs, workers, dropout, weight_decay, lr):
     print(f"RUNNING: Model={model.upper()} | Opt={opt.upper()} | BS={bs} | LR={lr}")
     print(f"{'='*60}")
 
-    # Use sys.executable to ensure we use the current virtual env's python
+    # Use virtual environment's python
     cmd = [
         sys.executable, "main.py",
         "--model", model,
@@ -26,13 +26,13 @@ def run_experiment(model, opt, bs, epochs, workers, dropout, weight_decay, lr):
     ]
 
     try:
-        # check=True will raise an error if main.py crashes
+        # Raise error if main.py crashes
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
         print(f"\n[!] Experiment Failed: {model} with {opt}. Error: {e}")
 
 def main():
-    # 1. Define your Grid Parameters
+    # 1. Define Grid Parameters
     models = ["vgg16", "resnet18", "efficientnet_b0"]
     optimizers = ["adamw", "sgd"]
     batch_sizes = [32, 64, 128]
@@ -40,18 +40,18 @@ def main():
     weight_decays = [1e-4, 1e-3, 1e-2]
 
     # Static settings
-    epochs = 2  # Reduced to 2: enough to spot a trend while saving time
-    num_workers = 4 # Set according to your device setup
-    learning_rate = 1e-4 # Lowered from 0.001 to prevent shattering pre-trained weights
+    epochs = 2
+    num_workers = 4
+    learning_rate = 1e-4
     
-    # 2. Decoupled Grid Search (Prevents 162+ combinatorial explosion)
+    # 2. Decoupled Grid Search
     
     # --- PHASE A: Find best training parameters (18 experiments) ---
-    # Fixes regularization to baseline: Dropout=0.1, WD=1e-4
+    # Baseline regularization: Dropout=0.1, WD=1e-4
     experiments_phase_a = list(itertools.product(models, optimizers, batch_sizes, [0.1], [1e-4]))
     
     # --- PHASE B: Find best regularization parameters (27 experiments) ---
-    # Update this dictionary with the best Optimizer and Batch Size for EACH model found in Phase A
+    # Best parameters from Phase A
     best_params = {
         "vgg16": {"opt": "adamw", "bs": 64},
         "resnet18": {"opt": "adamw", "bs": 32},
@@ -70,7 +70,7 @@ def main():
     print(f"Starting Grid Search: {total} experiments queued.")
     start_time = datetime.now()
 
-    # 3. Loop through and run
+    # 3. Execute experiments
     for i, (model, opt, bs, dropout, weight_decay) in enumerate(experiments, 1):
         print(f"\nProgress: {i}/{total}")
         run_experiment(model, opt, bs, epochs, num_workers, dropout, weight_decay, learning_rate)
