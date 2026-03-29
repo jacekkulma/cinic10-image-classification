@@ -43,7 +43,7 @@ def plot_learning_curves(results_dir, plots_dir):
         
         plt.tight_layout()
         save_path = os.path.join(plots_dir, f"{base_name}_curve.png")
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=150)
         plt.close()
         
 def plot_model_comparison_curves(results_dir, plots_dir):
@@ -98,7 +98,7 @@ def plot_model_comparison_curves(results_dir, plots_dir):
         
         plt.tight_layout(rect=[0, 0.04, 1, 1])
         save_path = os.path.join(plots_dir, f"comparison_curves_{aug}.png")
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=150)
         plt.close()
 
 def plot_augmentation_barchart(results_dir, plots_dir):
@@ -151,7 +151,7 @@ def plot_augmentation_barchart(results_dir, plots_dir):
     
     plt.tight_layout()
     save_path = os.path.join(plots_dir, "augmentation_comparison_barchart.png")
-    plt.savefig(save_path, dpi=300)
+    plt.savefig(save_path, dpi=150)
     plt.close()
 
 def plot_few_shot_barchart(results_dir, plots_dir):
@@ -178,7 +178,7 @@ def plot_few_shot_barchart(results_dir, plots_dir):
     ax.set_title('5-Shot SimpleShot Performance (Fine-Tuned Models)')
     ax.set_ylim(0, 100)
     plt.tight_layout()
-    plt.savefig(os.path.join(plots_dir, "few_shot_barchart.png"), dpi=300)
+    plt.savefig(os.path.join(plots_dir, "few_shot_barchart.png"), dpi=150)
     plt.close()
 
 if __name__ == "__main__":
