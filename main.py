@@ -47,7 +47,7 @@ def main():
     # 2. Lock the random seed for reproducibility
     set_seed(args.seed)
     
-    # 3. Setup device (Sticking to CUDA or CPU as requested)
+    # 3. Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"--- Starting Experiment ---")
     print(f"Device: {device}")
@@ -68,7 +68,6 @@ def main():
     
     # 5. Initialize Model
     print("Initializing model...")
-    # Passing num_classes=10 for CINIC-10
     model = get_model(args.model, num_classes=10, dropout_rate=args.dropout)
     
     # 6. Train Model

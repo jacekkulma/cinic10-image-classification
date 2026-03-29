@@ -11,7 +11,7 @@ def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, 
     print(f"Augmentation Type={augmentation_type.upper()}")
     print(f"{'='*60}")
 
-    # Use sys.executable to ensure we use the current virtual env's python
+    # Use virtual environment's python
     cmd = [
         sys.executable, "main.py",
         "--model", model,
@@ -27,36 +27,36 @@ def run_experiment(model, opt, augmentation_type, bs, epochs, workers, dropout, 
     ]
 
     try:
-        # check=True will raise an error if main.py crashes
+        # Raise error if main.py crashes
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
         print(f"\n[!] Experiment Failed: {model} with {opt} and augmentation_type={augmentation_type}. Error: {e}")
 
 def main():
-    # 1. Define your Grid
+    # 1. Define Grid
     models = ["vgg16", "resnet18", "efficientnet_b0"]    
     augmentation_types = ["none", "simple", "advanced", "both"]
 
-    # Update these with your final winning parameters from Phase B!
+    # Final winning parameters from Phase B
     best_params = {
         "vgg16": {"opt": "adamw", "bs": 64, "do": 0.2, "wd": 0.01},
         "resnet18": {"opt": "adamw", "bs": 32, "do": 0.1, "wd": 0.01},
         "efficientnet_b0": {"opt": "adamw", "bs": 32, "do": 0.2, "wd": 0.01}
     }
 
-    # Static settings across all models
-    epochs = 10  # Set to your final evaluation epoch count
-    num_workers = 4  # Set according to your device setup
-    learning_rate = 1e-4 # IMPORTANT: Use the winning LR from your grid search
+    # Static settings
+    epochs = 10
+    num_workers = 4
+    learning_rate = 1e-4
     
-    # 2. Generate all combinations using Cartesian Product
+    # 2. Generate combinations
     experiments = list(itertools.product(models, augmentation_types))
     
     total = len(experiments)
     print(f"Starting Final Evaluation (Baselines & Augmentations): {total} experiments queued.")
     start_time = datetime.now()
 
-    # 3. Loop through and run
+    # 3. Execute experiments
     for i, (model, aug_type) in enumerate(experiments, 1):
         print(f"\nProgress: {i}/{total}")
         params = best_params[model]

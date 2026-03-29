@@ -15,7 +15,7 @@ def plot_learning_curves(results_dir, plots_dir):
         with open(h_file, 'r') as f:
             history = json.load(f)
             
-        # Extract a clean name for the title (e.g., "vgg16 adamw bs64 do0.2 none")
+        # Extract clean name for title
         base_name = os.path.basename(h_file).replace("_history.json", "")
         title_name = base_name.replace("_", " ").upper()
         
@@ -58,7 +58,7 @@ def plot_model_comparison_curves(results_dir, plots_dir):
         parts = base_name.split('_')
         aug = parts[-1].lower() # Augmentation is the last part of the name
         
-        # Reconstruct model name (handle efficientnet_b0 splitting into two parts)
+        # Reconstruct model name
         model = "efficientnet_b0" if "efficientnet" in base_name else parts[0].lower()
             
         if aug in aug_groups:
@@ -119,7 +119,7 @@ def plot_augmentation_barchart(results_dir, plots_dir):
                 k, v = line.strip().split(":", 1)
                 parsed[k.strip()] = v.strip()
                 
-        # We only want to plot the final 10-epoch runs, not the 2-epoch grid search
+        # Plot final 10-epoch runs
         if parsed.get("Epochs") == "10" and parsed.get("Test Accuracy") != "Skipped":
             model = parsed["Model"].lower()
             aug = parsed["Augmentation"].lower()
@@ -146,7 +146,7 @@ def plot_augmentation_barchart(results_dir, plots_dir):
     ax.set_xticks(x)
     ax.set_xticklabels([m.upper() for m in models])
     ax.legend(title="Augmentation Type")
-    ax.set_ylim(40, 85) # Adjust based on your results for better scaling
+    ax.set_ylim(40, 85) # Adjust limits for better scaling
     ax.grid(axis='y', linestyle='--', alpha=0.7)
     
     plt.tight_layout()
