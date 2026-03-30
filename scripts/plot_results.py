@@ -155,28 +155,84 @@ def plot_augmentation_barchart(results_dir, plots_dir):
     plt.close()
 
 def plot_few_shot_barchart(results_dir, plots_dir):
-    """Generates a bar chart from the Few-Shot evaluation JSONs."""
+    """Generates a stacked bar chart comparing Few-Shot and Zero-Shot evaluations."""
     fs_files = glob.glob(os.path.join(results_dir, "few_shot_*.json"))
-    if not fs_files:
-        return # Skip if few-shot not fully done yet
+    zs_files = glob.glob(os.path.join(results_dir, "zero_shot_*.json"))
         
-    labels = []
-    accs = []
+    if not fs_files and not zs_files:
+        return  # Skip if evaluation not done yet
+        
+    # Pre-define our 3 models to ensure they align perfectly
+    data = {"vgg16": {}, "resnet18": {}, "efficientnet_b0": {}}
     
+    # Helper function to match the file to the correct model bucket
+    def get_model_key(filename):
+        fname = os.path.basename(filename).lower()
+        if "efficientnet" in fname: return "efficientnet_b0"
+        if "resnet18" in fname or "resnet-18" in fname: return "resnet18"
+        if "vgg16" in fname or "vgg-16" in fname: return "vgg16"
+        return None
+
+    # Parse Few-Shot (Fine-Tuned) Data
     for f in fs_files:
-        name = os.path.basename(f).replace("few_shot_", "").replace(".json", "")
-        with open(f, 'r') as file:
-            data = json.load(file)
-            labels.append(name.upper())
-            accs.append(data['mean_accuracy'] * 100) # Convert to percentage
-            
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(labels, accs, color=['#1f77b4', '#ff7f0e', '#2ca02c'][:len(labels)])
-    ax.bar_label(bars, padding=3, fmt='%.1f%%')
+        key = get_model_key(f)
+        if key:
+            with open(f, 'r') as file:
+                d = json.load(file)
+                # Handle standard float (0.722) to percentage (72.2)
+                acc = d.get('mean_accuracy', 0.0)
+                data[key]['few_shot'] = acc * 100 if acc <= 1.0 else acc
+                
+    # Parse Zero-Shot (Pre-trained Baseline) Data
+    for f in zs_files:
+        key = get_model_key(f)
+        if key:
+            with open(f, 'r') as file:
+                d = json.load(file)
+                acc = d.get('mean_accuracy', 0.0)
+                data[key]['zero_shot'] = acc * 100 if acc <= 1.0 else acc
+                
+    models = [m for m in data.keys() if data[m]]
+    if not models:
+        return
+        
+    x = np.arange(len(models))
+    width = 0.5
     
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Extract values safely
+    zs_values = [data[m].get('zero_shot', 0.0) for m in models]
+    fs_values = [data[m].get('few_shot', 0.0) for m in models]
+    
+    # Calculate the "Gain" (the blue top part of the stacked bar)
+    fs_gains = [max(0, fs - zs) for fs, zs in zip(fs_values, zs_values)]
+    
+    # Plot Bottom Bar (Zero-Shot Baseline - Orange)
+    rects1 = ax.bar(x, zs_values, width, label='Zero-Shot Baseline', color='#ff7f0e', edgecolor='white')
+    
+    # Plot Top Bar (Gain from Fine-Tuning - Blue) stacked on top of zs_values
+    rects2 = ax.bar(x, fs_gains, width, bottom=zs_values, label='Gain from Fine-Tuning', color='#1f77b4', edgecolor='white')
+    
+    # Add labels inside the bottom bar (Zero-Shot accuracy)
+    ax.bar_label(rects1, label_type='center', fmt='%.1f%%', color='white', weight='bold')
+    
+    # Add labels at the very top of the stacked bar (Total Fine-Tuned accuracy)
+    ax.bar_label(rects2, labels=[f"{fs:.1f}%" for fs in fs_values], padding=3, color='black', weight='bold', fontsize=11)
+    
+    # Formatting
     ax.set_ylabel('Mean Accuracy (%)')
-    ax.set_title('5-Shot SimpleShot Performance (Fine-Tuned Models)')
+    ax.set_title('Zero-Shot vs Fine-Tuned 5-Shot SimpleShot Performance')
+    ax.set_xticks(x)
+    
+    # Clean up model names for the x-axis
+    formatted_models = [m.replace('_', '-').upper() for m in models]
+    ax.set_xticklabels(formatted_models)
+    
+    ax.legend(loc='upper left')
     ax.set_ylim(0, 100)
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    
     plt.tight_layout()
     plt.savefig(os.path.join(plots_dir, "few_shot_barchart.png"), dpi=150)
     plt.close()
